@@ -96,6 +96,9 @@ goto doneargs
     if /i "%~1" == "-make-tool" goto maketool
     if /i "%~1" == "--make-tool" goto maketool
 
+    if /i "%~1" == "-external-hostbindir" goto hosttools
+    if /i "%~1" == "--external-hostbindir" goto hosttools
+
 :nextarg
     shift
     goto doargs
@@ -142,6 +145,12 @@ goto doneargs
 :maketool
     shift
     set MAKE=%~1
+    goto nextarg
+
+
+:hosttools
+    shift
+    set CFG_HOST_QT_TOOLS_PATH=%~1
     goto nextarg
 
 :doneargs
@@ -275,8 +284,9 @@ if errorlevel 1 (cd .. & exit /b 1)
 cd ..
 
 rem Generate qt.conf
+set QTCONFFILE=%QTDIR%\bin\qt.conf
 
-> "%QTDIR%\bin\qt.conf" (
+> "%QTCONFFILE%" (
     @echo [EffectivePaths]
     @echo Prefix=..
     @echo [Paths]
@@ -284,7 +294,7 @@ rem Generate qt.conf
     @echo HostSpec=%PLATFORM%
 )
 if not "%QTDIR%" == "%QTSRC%" (
-    >> "%QTDIR%\bin\qt.conf" (
+    >> "%QTCONFFILE%" (
         @echo [EffectiveSourcePaths]
         @echo Prefix=%QTSRC:\=/%
     )
@@ -293,4 +303,9 @@ if not "%QTDIR%" == "%QTSRC%" (
 rem Launch qmake-based configure
 
 cd "%TOPQTDIR%"
+
+if "%CFG_HOST_QT_TOOLS_PATH%" == "" (
 "%QTDIR%\bin\qmake.exe" "%TOPQTSRC%" -- %ARGS%
+) else (
+       "%CFG_HOST_QT_TOOLS_PATH%\qmake.exe" -qtconf "%QTCONFFILE%" "%TOPQTSRC%" -- %ARGS%
+)
